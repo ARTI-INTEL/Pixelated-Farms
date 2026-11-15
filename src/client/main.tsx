@@ -197,7 +197,7 @@ function App() {
             ◈
           </span>
           <div>
-            <strong>FIELDSHIFT</strong>
+            <strong>PIXELATED FARMING</strong>
             <span>NASA-data crop rotation intelligence</span>
           </div>
         </div>
@@ -309,7 +309,7 @@ function App() {
                 next crop you plant.
               </h1>
               <p className="landing-lede">
-                Fieldshift turns NASA Earth observations into an explainable rotation plan: climate
+                Pixelated Farming turns NASA Earth observations into an explainable rotation plan: climate
                 history from POWER, vegetation condition from MODIS, dated imagery from GIBS, and a
                 transparent crop engine that shows its reasoning.
               </p>

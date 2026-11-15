@@ -41,7 +41,7 @@ async function getJson<T>(url: string, attempts = 2, timeoutMs = 25_000): Promis
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       const response = await fetch(url, {
-        headers: { Accept: 'application/json', 'User-Agent': 'Fieldshift/1.0' },
+        headers: { Accept: 'application/json', 'User-Agent': 'PixelatedFarming/1.0' },
         signal: AbortSignal.timeout(timeoutMs),
       })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)

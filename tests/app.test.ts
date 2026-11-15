@@ -19,7 +19,7 @@ const runtime = new Miniflare({
             },
           },
         },
-        env: { DB: { type: 'd1', name: 'fieldshift-test' } },
+        env: { DB: { type: 'd1', name: 'pixelated-farming-test' } },
       },
     },
   ],

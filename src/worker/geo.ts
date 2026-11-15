@@ -55,7 +55,7 @@ export async function geocode(query: string): Promise<GeoResult[]> {
   const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=en`
   const response = await fetch(url, {
     headers: {
-      'User-Agent': 'Fieldshift/1.0 (NASA Space Apps demo)',
+      'User-Agent': 'PixelatedFarming/1.0 (NASA Space Apps demo)',
       Accept: 'application/json',
     },
     signal: AbortSignal.timeout(12_000),

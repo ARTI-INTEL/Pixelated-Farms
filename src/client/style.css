@@ -237,8 +237,9 @@ label {
 }
 
 .brand strong {
-  font-size: 14px;
-  letter-spacing: 0.22em;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .brand span {

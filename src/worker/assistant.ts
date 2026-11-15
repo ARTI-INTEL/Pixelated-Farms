@@ -75,7 +75,7 @@ export function farmFacts(
     facts.push({
       label: 'Top recommendation',
       value: `${top.name} — score ${top.score}/100, confidence ${Math.round(top.confidence * 100)}%${top.window ? `, window ${monthLabel(top.window.startMonth)}–${monthLabel(top.window.endMonth)}` : ''}`,
-      source: 'Fieldshift scoring engine (FAO-56 / ECOCROP parameters + NASA inputs)',
+      source: 'Pixelated Farming scoring engine (FAO-56 / ECOCROP parameters + NASA inputs)',
     })
   return facts
 }
@@ -268,7 +268,7 @@ export async function answerQuestion(
           {
             role: 'system',
             content:
-              'You are Fieldshift, an agricultural decision-support assistant. Use ONLY the supplied field facts and recommendations. Never invent measurements, dates, yields, prices or nutrient values. Always name the dataset and period behind a number. Distinguish measured observations, derived indicators and model predictions. Say plainly when data is unavailable. Never claim satellite data measures soil nutrients. Do not forecast yield or profit. Keep answers under 200 words, plain text, no markdown tables.',
+              'You are Pixelated Farming, an agricultural decision-support assistant. Use ONLY the supplied field facts and recommendations. Never invent measurements, dates, yields, prices or nutrient values. Always name the dataset and period behind a number. Distinguish measured observations, derived indicators and model predictions. Say plainly when data is unavailable. Never claim satellite data measures soil nutrients. Do not forecast yield or profit. Keep answers under 200 words, plain text, no markdown tables.',
           },
           {
             role: 'user',

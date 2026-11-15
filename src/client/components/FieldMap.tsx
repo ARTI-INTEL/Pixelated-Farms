@@ -6,16 +6,34 @@ import type { FarmInput, GeoResult, Irrigation, LngLat } from '../../shared/type
 import { request } from '../api'
 
 const GIBS_LAYERS = [
+  { id: '', label: 'No satellite overlay (clean map)' },
   { id: 'MODIS_Terra_CorrectedReflectance_TrueColor', label: 'MODIS Terra true colour' },
   { id: 'VIIRS_SNPP_CorrectedReflectance_TrueColor', label: 'VIIRS S-NPP true colour' },
 ]
 const BASEMAPS = {
-  dark: 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-  imagery: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-}
+  satellite: {
+    label: 'Cloud-free satellite',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  },
+  streets: {
+    label: 'Street map',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  },
+  dark: {
+    label: 'Dark map',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  },
+} as const
+const BASEMAP_ATTRIBUTION =
+  'Basemaps: Esri World Imagery / Dark Gray, © OpenStreetMap contributors · Imagery overlay: NASA GIBS / EOSDIS'
+type BasemapId = keyof typeof BASEMAPS
 
 const dateDaysAgo = (days: number) =>
   new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)
+
+/** 1×1 transparent PNG: used so a disabled overlay requests no GIBS tiles. */
+const BLANK_TILE =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
 const gibsTiles = (layer: string, date: string) =>
   `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`
@@ -39,8 +57,8 @@ export function FieldMap({
   const [name, setName] = useState(initial?.name ?? '')
   const [previousCrop, setPreviousCrop] = useState(initial?.previousCrop ?? '')
   const [irrigation, setIrrigation] = useState<Irrigation>(initial?.irrigation ?? 'rainfed')
-  const [layer, setLayer] = useState(GIBS_LAYERS[0].id)
-  const [basemap, setBasemap] = useState<'dark' | 'imagery'>('dark')
+  const [layer, setLayer] = useState('')
+  const [basemap, setBasemap] = useState<BasemapId>('satellite')
   const [date, setDate] = useState(dateDaysAgo(20))
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<GeoResult[]>([])
@@ -62,13 +80,13 @@ export function FieldMap({
         sources: {
           basemap: {
             type: 'raster',
-            tiles: [BASEMAPS.dark],
+            tiles: [BASEMAPS.satellite.url],
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors © CARTO',
+            attribution: BASEMAP_ATTRIBUTION,
           },
           gibs: {
             type: 'raster',
-            tiles: [gibsTiles(GIBS_LAYERS[0].id, dateDaysAgo(20))],
+            tiles: [BLANK_TILE],
             tileSize: 256,
             maxzoom: 9,
             attribution: 'Imagery: NASA GIBS / EOSDIS',
@@ -76,7 +94,18 @@ export function FieldMap({
         },
         layers: [
           { id: 'basemap', type: 'raster', source: 'basemap' },
-          { id: 'gibs', type: 'raster', source: 'gibs', paint: { 'raster-opacity': 0.65 } },
+          {
+            id: 'gibs',
+            type: 'raster',
+            source: 'gibs',
+            layout: { visibility: 'none' },
+            paint: {
+              'raster-opacity': 0.92,
+              'raster-contrast': 0.12,
+              'raster-saturation': 0.08,
+              'raster-brightness-max': 0.96,
+            },
+          },
         ],
       },
       center: start,
@@ -109,6 +138,10 @@ export function FieldMap({
       setPoints(next)
     })
     map.current = instance
+    // Development-only handle for QA of the live map instance.
+    if (import.meta.env.DEV)
+      (window as unknown as { __pixelatedFarmingMap?: maplibregl.Map }).__pixelatedFarmingMap =
+        instance
     if (initial?.boundary.length) setPoints(initial.boundary)
     return () => {
       instance.remove()
@@ -159,14 +192,20 @@ export function FieldMap({
     if (!instance || !mapReady) return
     const source = instance.getSource('gibs') as maplibregl.RasterTileSource | undefined
     if (!source) return
+    if (!layer) {
+      instance.setLayoutProperty('gibs', 'visibility', 'none')
+      source.setTiles([BLANK_TILE])
+      return
+    }
     source.setTiles([gibsTiles(layer, date)])
+    instance.setLayoutProperty('gibs', 'visibility', 'visible')
   }, [layer, date, mapReady])
 
   useEffect(() => {
     const instance = map.current
     if (!instance || !mapReady) return
     const source = instance.getSource('basemap') as maplibregl.RasterTileSource | undefined
-    source?.setTiles([BASEMAPS[basemap]])
+    source?.setTiles([BASEMAPS[basemap].url])
   }, [basemap, mapReady])
 
   const area = useMemo(() => (points.length >= 3 ? ringAreaHa(points) : 0), [points])
@@ -236,7 +275,7 @@ export function FieldMap({
         </form>
         <div className="map-controls">
           <label>
-            <span className="sr-only">Imagery layer</span>
+            <span className="sr-only">Satellite overlay</span>
             <select value={layer} onChange={(event) => setLayer(event.target.value)}>
               {GIBS_LAYERS.map((entry) => (
                 <option key={entry.id} value={entry.id}>
@@ -256,13 +295,17 @@ export function FieldMap({
               onChange={(event) => setDate(event.target.value)}
             />
           </label>
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => setBasemap(basemap === 'dark' ? 'imagery' : 'dark')}
+          <select
+            value={basemap}
+            onChange={(event) => setBasemap(event.target.value as BasemapId)}
+            aria-label="Basemap"
           >
-            {basemap === 'dark' ? 'Light basemap' : 'Dark basemap'}
-          </button>
+            {(Object.keys(BASEMAPS) as BasemapId[]).map((id) => (
+              <option key={id} value={id}>
+                {BASEMAPS[id].label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -281,9 +324,11 @@ export function FieldMap({
       <div ref={container} className="map-canvas" aria-label="Field boundary map" />
 
       <p className="map-caption">
-        Click to add corners, then finish the field. Basemap © OpenStreetMap contributors © CARTO ·
-        Imagery NASA GIBS ({layer.split('_')[0]}, {date}). NASA imagery is 250 m–1 km and shown for
-        context, not measurement.
+        Click to add corners, then finish the field. Basemap: Esri World Imagery / © OpenStreetMap
+        contributors
+        {layer
+          ? ` · NASA GIBS imagery ${date} (${layer.split('_')[0]}, 250 m–1 km). Single-date imagery keeps its clouds, cloud shadows and swath gaps — change the date or choose the clean map if it obscures the field. Context only, not a measurement layer.`
+          : ' · satellite overlay off: single-date NASA imagery is often cloudy, so the clean map is the default.'}
       </p>
 
       <form className="field-form" onSubmit={submit}>

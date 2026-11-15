@@ -356,7 +356,7 @@ export function createApp(authenticate: Authenticate = currentUser) {
       : c.env.ASSETS.fetch(c.req.raw),
   )
   app.onError((error, c) => {
-    console.error('Fieldshift error', error)
+    console.error('Pixelated Farming error', error)
     return c.json({ error: 'Something went wrong. Please try again.' }, 500)
   })
   return app

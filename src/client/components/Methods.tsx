@@ -237,7 +237,7 @@ export function Methods() {
           (non-NASA). Basemap: © OpenStreetMap contributors © CARTO. Place search: Photon / OpenStreetMap.
         </p>
         <p className="fineprint">
-          Fieldshift is an independent NASA Space Apps Challenge entry. It is not affiliated with or
+          Pixelated Farming is an independent NASA Space Apps Challenge entry. It is not affiliated with or
           endorsed by NASA. Values are for decision support and demonstration, not regulatory or
           financial advice.
         </p>
